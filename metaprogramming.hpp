@@ -35,6 +35,8 @@ public:
     bool operator>=(const cls& other) const {
         return self() == other || other < self();
     }
+protected:
+    ~CompareFromLessCRTP() = default;
 };
 
 /**

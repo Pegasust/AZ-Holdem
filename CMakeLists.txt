@@ -15,6 +15,9 @@ target_link_libraries(ScopedEnumTest Catch2 Poker)
 add_executable(PokerHandTest PokerHandTest.cpp)
 target_link_libraries(PokerHandTest Catch2 Poker)
 
+add_executable(PokerHandAllPossible PokerHandAllPossible.cpp)
+target_link_libraries(PokerHandAllPossible Poker)
+
 enable_testing()
 
 add_test(NAME "CardTest" COMMAND ScopedEnumTest)

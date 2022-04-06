@@ -45,8 +45,9 @@ private:
     Rank rank;
     Suit suit;
 public:
-    Card(const Rank rank, const Suit suit): rank(rank), suit(suit){}
-
+    
+    Card(Rank rank, Suit suit): rank(rank), suit(suit){}
+    
     Rank getRank() const {return rank;}
     Suit getSuit() const {return suit;}
     int getValue() const {return static_cast<int>(rank);}
