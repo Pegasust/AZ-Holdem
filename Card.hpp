@@ -15,4 +15,4 @@
 
 #include "Card.cpp"
 
-#endif //SCOPEDENUM_CARD_HPP
+#endif  // SCOPEDENUM_CARD_HPP

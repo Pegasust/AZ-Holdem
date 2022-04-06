@@ -1,0 +1,4 @@
+add_executable(metaprogramming_test metaprogramming_test.cpp)
+target_link_libraries(metaprogramming_test Catch2 Metaprogramming)
+
+add_test(NAME "Metaprogramming_Test" COMMAND metaprogramming_test)
