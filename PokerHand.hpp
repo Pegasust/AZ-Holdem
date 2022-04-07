@@ -38,6 +38,7 @@ public CompareFromLessCRTP<PokerHand>, public ToStringCRTP<PokerHand>, private s
   hand_value()
   {
       if(size() == 5) {
+          std::sort(begin(), end());  // sort as if ace is 14.
           hand_value = make_optional(HandValue::from_hand(*this));
       }
   }
@@ -62,8 +63,6 @@ public CompareFromLessCRTP<PokerHand>, public ToStringCRTP<PokerHand>, private s
 
   auto getAllPossibleHands() const
   {
-    std::string str = toString();
-    std::cout << str << std::endl;
     std::vector<PokerHand> retval;
     constexpr int cards_per_hand = 5;
     assert(size() >= cards_per_hand && "Size less than cards per hand required");
@@ -82,9 +81,8 @@ public CompareFromLessCRTP<PokerHand>, public ToStringCRTP<PokerHand>, private s
     while (true)
     {
       // first, consume the hand
+      assert(partial_hand.size() == 5);
       retval.emplace_back(partial_hand);                      // copy
-      std::sort(retval.back().begin(), retval.back().end());  // sort as if ace is 14.
-      retval.back().hand_value = make_optional(HandValue::from_hand(retval.back()));
       // then structure to the next iteration TODO: reformatable
 
       // pop if needed, if no more hand reachable, end
@@ -131,16 +129,6 @@ public CompareFromLessCRTP<PokerHand>, public ToStringCRTP<PokerHand>, private s
  public:
   bool operator<(const PokerHand& other) const
   {
-    // rankings:
-    // Straight Flush (5): same suit, 5 in sequence
-    // 4 of a kind: 4 aces, 4 threes
-    // full house: three-of-a-kind + pair
-    // flush: 5 cards, same suit, not in sequence
-    // three-of-a-kind
-    // two pairs
-    // 1 pair
-    // no pair
-
     return get_hand_value() < other.get_hand_value();
   }
 

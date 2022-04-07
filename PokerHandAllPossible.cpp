@@ -6,7 +6,7 @@
 
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
-    os << "[";
+    os << "(" << v.size() << ") " << "[";
     for(auto itr = v.cbegin(); itr != v.cend(); ++itr) {
         if(itr != v.cbegin()) {
             os << ", ";

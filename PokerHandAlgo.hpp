@@ -7,50 +7,7 @@
 
 #include "Card.hpp"
 #include "metaprogramming.hpp"
-
-
-enum class HandType : int
-{
-  STRAIGHT_FLUSH = 8,
-  SAME_4 = 7,
-  FULL_HOUSE = 6,
-  FLUSH = 5,
-  STRAIGHT = 4,
-  SAME_3 = 3,
-  DOUBLE_PAIR = 2,
-  PAIR = 1,
-  HIGH = 0
-};
-
-HandType type_from_common_rank(int most_common_rank, int second_common_rank) {
-    if(most_common_rank == 4) {
-        return HandType::SAME_4;
-    }
-    if(most_common_rank == 3) {
-        return second_common_rank == 2? HandType::FULL_HOUSE: HandType::SAME_3;
-    }
-    if(most_common_rank == 2) {
-        return second_common_rank == 2? HandType::DOUBLE_PAIR: HandType::PAIR;
-    }
-    return HandType::HIGH;
-}
-
-std::ostream& operator<<(std::ostream& os, const HandType& type)
-{
-  static const char* hand_type_str[] = {
-    "High Card",
-    "Pair",
-    "Double pairs",
-    "Three-of-a-kind",
-    "Straight", 
-    "Flush",
-    "Fullhouse",
-    "Four-of-a-kind",
-    "Straight Flush",
-  };
-  auto idx = static_cast<int>(type);
-  return os << "["<<idx<<"]" << hand_type_str[idx];
-}
+#include "HandType.hpp"
 
 /**
  * @brief Simple data-type for value of a given hand.
@@ -64,11 +21,10 @@ public CompareFromLessCRTP<HandValue>, public ToStringCRTP<HandValue>
  public:
   HandType type;
   int tiebreaker_value;
-  bool low_ace;
 
   HandValue() = default;
-  HandValue(HandType type, int tiebreaker_value, bool low_ace) : 
-  type(type), tiebreaker_value(tiebreaker_value), low_ace(low_ace){}
+  HandValue(HandType type, int tiebreaker_value) : 
+  type(type), tiebreaker_value(tiebreaker_value){}
 
   bool operator<(const HandValue& other) const
   {
@@ -81,90 +37,93 @@ public CompareFromLessCRTP<HandValue>, public ToStringCRTP<HandValue>
   friend std::ostream& operator<<(std::ostream& os, const HandValue& hand)
   {
     return os << "HandValue(" << hand.type << ", tiebreak_value: " 
-        << hand.tiebreaker_value << ", low ace: " << hand.low_ace << ")";
+        << hand.tiebreaker_value << ")";
   }
-  static HandValue from_hand(const std::vector<Card>& cards) {
-      assert(cards.size() == 5 && "Algorithm only evaluates 5 cards at a time.");
-    // flush
-    auto flush_suit = flushing_suit(cards);
-    if (flush_suit.has_value())
-    {
-      return _flush_hand_value(cards);
-    }
-    // check for pairs (all is sorted)
-    
-    int most_common_rank = 1;
-    int second_common_rank = 1;
+  static HandValue from_card(const Card& card) {
+    return {HandType::HIGH, card.getValue()};
+  }
+// from_hand re-model
+static HandValue from_hand(const std::vector<Card>& cards) {
+    auto flush = flush_hand_value(cards);
+    auto straight = straight_hand_value(cards);
 
-    int common_rank_count = 1;
-    auto common_rank = cards.front().getRank();
-    for(int i = 1; i <= cards.size(); ++i) { // the end is also a cue for update
-        if(i == cards.size() || cards[i].getRank() != common_rank) {
-            // evaluate current common_rank_count.
-            if(common_rank_count > most_common_rank) {
-                second_common_rank = most_common_rank;
-                most_common_rank = common_rank_count;
-            } else if(common_rank_count > second_common_rank) {
-                second_common_rank = common_rank_count;
-            }
-            common_rank_count = 1;
+    if(flush.has_value()) {
+        if(!straight.has_value()) {
+            return flush.value();
         }
-        common_rank = cards[i].getRank();
+        return {HandType::STRAIGHT_FLUSH, straight.value().tiebreaker_value};
     }
 
-    HandType type = type_from_common_rank(most_common_rank, second_common_rank);
-    auto card = cards.back();
-    int tiebreak_value = card.getValue() * 4 + static_cast<int>(card.getRank()); // TODO: determine this tiebreak_value
-    return {type, tiebreak_value, false};      
-  }
+    if(straight.has_value()) {
+        return straight.value();
+    }
+
+    std::vector<HandValue> hand_values;
+    int count = 1;
+    int value = cards.front().getValue();
+    for(int i = 1; i < cards.size(); ++i) {
+        if(cards[i].getValue() != value) {
+            auto rank = type_from_common_rank(count);
+            hand_values.emplace_back(rank, value);
+            count = 0;
+        }
+        ++count;
+        value = cards[i].getValue();
+    }
+    auto rank = type_from_common_rank(count);
+    hand_values.emplace_back(rank, value);
+    std::sort(hand_values.begin(), hand_values.end());
+    int tiebreaker_v = tiebreaker(hand_values.begin(), hand_values.end(), [](const HandValue& hv) {
+        return hv.tiebreaker_value;
+    });
+    int second = hand_values.size() <= 1? 0: common_rank_from_type(hand_values[hand_values.size()-2].type);
+    HandType responding_type = type_from_common_rank(
+      common_rank_from_type(hand_values.back().type), second
+    );
+    return {responding_type, tiebreaker_v};
+}
 private:
-
-  static Optional<Suit> flushing_suit(const std::vector<Card>& cards)
-  {
-    static constexpr int n_suits = 4;  // there are 4 suits in a deque.
-    std::array<int, n_suits> suit_count = { 0 };
-    /// populate suit count
-    for (auto itr = cards.cbegin(); itr != cards.cend(); ++itr)
-    {
-      suit_count[static_cast<int>(itr->getSuit())] += 1;
+static Optional<HandValue> flush_hand_value(const std::vector<Card>& cards) {
+    auto itr = std::adjacent_find(cards.cbegin(), cards.cend(), [](const auto& lhs, const auto& rhs) {
+        return lhs.getSuit() != rhs.getSuit();
+    });
+    if(itr != cards.cend()) {
+        // not flush
+        return {};
     }
-    /// determine if there is a flushing suit (suit with count >= 5)
-    auto flush_suit_itr = std::find_if(suit_count.begin(), suit_count.end(), [](const auto& suit) { return suit >= 5; });
-
-    if (flush_suit_itr == suit_count.end()){ return {}; /*no suit*/}
-    return make_optional<Suit>(static_cast<Suit>(flush_suit_itr - suit_count.begin()));
-  }
-  static HandValue _flush_hand_value(const std::vector<Card>& cards)
-  {
-    // determine if also straight (requires sorted)
-    // determine ace's value
-
-    // The only way ace takes on value of 1 is when there is
-    // straight flush containing 2-3-4-5
-
-    // check that at least the first four is consecutive
+    return make_optional<HandValue>(HandType::FLUSH, 
+    tiebreaker(cards.cbegin(), cards.cend(), [](const Card& card) {
+        return card.getValue();
+    }));
+}
+static Optional<HandValue> straight_hand_value(const std::vector<Card>& cards) {
     for (int i = 1; i < 4; ++i)
     {
       if (cards[i - 1].getValue() != cards[i].getValue() - 1)
       {
         // not straight
-        int tiebreak_value; // TODO: determine tiebreak_value
-        return { HandType::FLUSH, tiebreak_value, false };
+        return {};
       }
     }
-    // The algorithm now ends in 2 ways:
-
-    // 1. there is an ace at the end AND the sequence is strictly 2-3-4-5
-    if(cards.front().getRank() == Rank::DEUCE && cards.back().getRank() == Rank::ACE) {
-        // ace is 1
-        auto card = cards[cards.size()-2];
-        int tiebreak_value = card.getValue() * 4 + static_cast<int>(card.getSuit());
-        return { HandType::STRAIGHT_FLUSH, tiebreak_value, true};
+    bool low_ace = (cards.front().getRank() == Rank::DEUCE && cards.back().getRank() == Rank::ACE);
+    if(!low_ace && cards[cards.size()-2].getValue() != cards.back().getValue() -1) {
+        // last card doesn't go on the sequence
+        return {};
     }
-    // 2. normal case, the sequence ends with the highest card.
-    auto card = cards.back();
-    int tiebreak_value = card.getValue() * 4 + static_cast<int>(card.getSuit());
-    return { HandType::STRAIGHT_FLUSH, tiebreak_value, false };
+    auto highest_card = low_ace? cards[cards.size()-2]: cards.back();
+    return make_optional<HandValue>(HandType::STRAIGHT, highest_card.getValue());
+}
+  template<typename ConstInputIterator, typename UnaryOperator>
+  static int tiebreaker(ConstInputIterator begin, ConstInputIterator end, UnaryOperator unary) {
+    int val = 0;
+    int shift = 0;
+    constexpr int shifter = 4;
+    // we will shift by 4 to make multiplier to be 16 (closest to 15 and fastest)
+    for(auto itr = begin; itr != end; ++itr) {
+      val += unary(*itr) << shift;
+      shift += shifter;
+    }
+    return val;
   }
 };
 
