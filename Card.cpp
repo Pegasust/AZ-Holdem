@@ -17,6 +17,7 @@
 #include "metaprogramming.hpp"
 enum class Rank
 {
+  BEGIN = 2, // sentinel values for iteration
   DEUCE = 2,
   THREE = 3,
   FOUR = 4,
@@ -29,11 +30,14 @@ enum class Rank
   JACK = 11,
   QUEEN = 12,
   KING = 13,
-  ACE = 14
+  ACE = 14,
+  LAST = 15 // sentinel values for iteration
 };
 
 enum class Suit
 {
+  BEGIN = 0,
+  LAST = 4,
   CLUBS = 3,
   DIAMONDS = 2,
   HEARTS = 1,

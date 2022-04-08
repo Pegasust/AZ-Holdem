@@ -57,11 +57,11 @@ std::ostream& operator<<(std::ostream& os, const HandType& type)
     "Three-of-a-kind",
     "Straight", 
     "Flush",
-    "Fullhouse",
+    "Full House",
     "Four-of-a-kind",
     "Straight Flush",
   };
   auto idx = static_cast<int>(type);
-  return os << "["<<idx<<"]" << hand_type_str[idx];
+  return os << hand_type_str[idx];
 }
 

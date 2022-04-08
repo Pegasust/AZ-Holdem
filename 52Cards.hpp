@@ -1,6 +1,6 @@
 /*
  * 52Cards.hpp
- *
+ * Helpful for shortcuts for testing!
  *  Created on: Oct 8, 2018
  *      Author: mercer
  */

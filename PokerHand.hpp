@@ -15,13 +15,13 @@
 #include "metaprogramming.hpp"
 #include "PokerHandAlgo.hpp"
 
-
 class PokerHand : 
 public CompareFromLessCRTP<PokerHand>, public ToStringCRTP<PokerHand>, private std::vector<Card>
 {
  private:
   using Collection = std::vector<Card>;
-  Optional<HandValue> hand_value;  
+  Optional<HandValue> hand_value;
+  Optional<Collection> best_hand;
   static constexpr int ace_value = static_cast<int>(Rank::ACE);
 
  public:
@@ -35,11 +35,13 @@ public CompareFromLessCRTP<PokerHand>, public ToStringCRTP<PokerHand>, private s
   template<typename... CardConstructs>
   PokerHand(CardConstructs&&... args) : 
   vector({ std::forward<CardConstructs>(args)... }),
-  hand_value()
+  hand_value(),
+  best_hand()
   {
       if(size() == 5) {
           std::sort(begin(), end());  // sort as if ace is 14.
           hand_value = make_optional(HandValue::from_hand(*this));
+          best_hand = make_optional<Collection>(static_cast<const Collection&>(*this));
       }
   }
 
@@ -49,20 +51,24 @@ public CompareFromLessCRTP<PokerHand>, public ToStringCRTP<PokerHand>, private s
   PokerHand& addCard(CardConstructs&&... args)
   {
     emplace_back(std::forward<CardConstructs>(args)...);
+    if(size() < 5) {return *this;}
     auto all_possibles = getAllPossibleHands();
-    assert(all_possibles.size() >= 1 && "No possibilities for given hand");
     HandValue max_value = HandValue::from_hand(all_possibles[0]);
+    int max_idx = 0;
     for (int i = 1; i < all_possibles.size(); ++i)
     {
       HandValue next_value = HandValue::from_hand(all_possibles[i]);
-      max_value = max_value < next_value ? next_value : max_value;
+      if(max_value < next_value) {
+        max_value = next_value;
+        max_idx = i;
+      }
     }
-    hand_value = make_optional(max_value);
+    hand_value = make_optional(std::move(max_value));
+    this->best_hand = make_optional<Collection>(std::move(static_cast<Collection>(all_possibles[max_idx])));
     return *this;
   }
 
-  auto getAllPossibleHands() const
-  {
+auto getAllPossibleHands() const {
     std::vector<PokerHand> retval;
     constexpr int cards_per_hand = 5;
     assert(size() >= cards_per_hand && "Size less than cards per hand required");
@@ -70,60 +76,40 @@ public CompareFromLessCRTP<PokerHand>, public ToStringCRTP<PokerHand>, private s
     // recursive backtracking
     std::vector<int> backtrack;
     std::vector<Card> partial_hand;
+    
     // initialize
-    for (int i = 0; i < cards_per_hand; ++i)
-    {
-      backtrack.push_back(i);
-      partial_hand.push_back((*this)[i]);
-    }
+    backtrack.push_back(-1);
     const int backtrack_pop_threshold = size();
-    // TODO: simplify this loop; this is essentially unrolling recursive-backtracking.
-    while (true)
-    {
-      // first, consume the hand
-      assert(partial_hand.size() == 5);
-      retval.emplace_back(partial_hand);                      // copy
-      // then structure to the next iteration TODO: reformatable
-
-      // pop if needed, if no more hand reachable, end
-      bool end = false;
-      int threshold = backtrack_pop_threshold - cards_per_hand + backtrack.size();
-      ++backtrack.back();
-      while (backtrack.back() == threshold)
-      {
-        partial_hand.pop_back();
-        backtrack.pop_back();
-        --threshold;  // maintain correct threshold because --backtrack.size()
-        if (backtrack.size() == 0)
-        {
-          end = true;
-          break;
-        }
+    while(backtrack.size() > 0) {
+        int threshold = backtrack_pop_threshold - cards_per_hand + backtrack.size();
         ++backtrack.back();
-      }
-      if (end == true)
-      {
-        break;
-      }
-      // follow partial_hand up with ++backtrack.back()
-      partial_hand.back() = (*this)[backtrack.back()];
-
-      // repopulate if we have popped many times
-      for (int i = backtrack.size(); i < cards_per_hand; ++i)
-      {
-        int v = backtrack.back() + 1;
-        backtrack.push_back(v);
-        partial_hand.push_back((*this)[v]);
-      }
+        if(backtrack.back() == threshold) {
+            if(partial_hand.size() > 0) {partial_hand.pop_back();}
+            backtrack.pop_back();
+            continue;
+        }
+        if(partial_hand.size() > 0) {partial_hand.pop_back();}
+        partial_hand.push_back((*this)[backtrack.back()]);
+        // add until it's sufficient to be 5
+        for(int i = backtrack.size(); i < cards_per_hand; ++i) {
+            int v = backtrack.back() + 1;
+            backtrack.push_back(v);
+            partial_hand.push_back((*this)[v]);
+        }        
+        // partial_hand ready to be consumed!
+        retval.emplace_back(partial_hand);
     }
-
     return retval;
-  }
+}
 
- private:
+ public:
   const HandValue& get_hand_value() const
   {
       return hand_value.value();
+  }
+
+  const auto& get_best_hand() const {
+    return best_hand.value();
   }
 
  public:
@@ -143,7 +129,20 @@ public CompareFromLessCRTP<PokerHand>, public ToStringCRTP<PokerHand>, private s
       }
       os << *card;
     }
-    os << ", value: " << cards.hand_value;
+    os << "\n    Best hand: [";
+    if(cards.best_hand.has_value()) {
+      auto &best_hand = cards.best_hand.value();
+      for(auto card = best_hand.cbegin(); card != best_hand.cend(); ++card) {
+        if(card != best_hand.cbegin()) {
+          os << ' ';
+        } 
+        os << *card;
+      }
+    } else {
+      os << "<Unknown>";
+    }
+    os << "]";
+    os << "     " << cards.hand_value;
     os << ")";
     return os;
   }

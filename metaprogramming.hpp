@@ -103,13 +103,13 @@ public:
         reset();
     }
     friend std::ostream& operator<<(std::ostream& os, const Optional<T>& val) {
-        os << "Optional(";
+        os << "<";
         if(val.has_value()) {
             os << val.value();
         } else {
-            os << "{}";
+            os << "Optional.empty";
         }
-        return os << ")";
+        return os << ">";
     }
 };
 

@@ -36,7 +36,7 @@ public CompareFromLessCRTP<HandValue>, public ToStringCRTP<HandValue>
   }
   friend std::ostream& operator<<(std::ostream& os, const HandValue& hand)
   {
-    return os << "HandValue(" << hand.type << ", tiebreak_value: " 
+    return os << "(" << hand.type << ", tiebreak: " 
         << hand.tiebreaker_value << ")";
   }
   static HandValue from_card(const Card& card) {
