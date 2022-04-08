@@ -36,7 +36,7 @@ private:
     std::vector<Card> deck;
     std::vector<PokerPlayer> players;
     std::vector<Card> community_cards;
-    std::vector<std::reference_wrapper<Observer> observers;
+    std::vector<std::reference_wrapper<Observer>> observers;
     static constexpr double ANTE_USD = 2;
     double pot;
 
