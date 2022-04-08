@@ -24,7 +24,7 @@ private:
     }
     std::ostream& print_best_hand(const PokerPlayer& player) {
         return std::cout << player.get_hand().get_best_hand()
-                      << "   " << player.get_hand().get_hand_value();
+                      << "   " << player.get_hand().get_hand_value().type;
     }
 public:
     void win_determined(
@@ -51,7 +51,7 @@ public:
         std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
         for(int i = 0; i < winners.size(); ++i) {
             std::cout << " ";
-            print_best_hand(players[winners[i]]) << " ";
+            print_best_hand(players[winners[i]]) << "   ";
             print_player(winners[i], players[winners[i]]) << std::endl;
         }
         std::cout << std::endl;
