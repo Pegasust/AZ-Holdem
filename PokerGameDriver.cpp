@@ -15,10 +15,10 @@ static constexpr double STARTING_BALANCE = 100;
 //     }
 //     return os << "]";
 // }
-class CLIPokerGameObserver: public PokerGameModel::Observer {
+class CLIPokerGameObserver: public virtual PokerGameModel::Observer {
 private:
     std::ostream& print_player(int i, const PokerPlayer& player) {
-        return std::cout << "Player " << (i+1) << ": " 
+        return std::cout << "Player " << (i+1) << ": $" 
                   << std::fixed << std::setprecision(2) 
                   << player.get_balance();
     }
@@ -30,7 +30,7 @@ public:
     void win_determined(
             const std::vector<Card>& community_cards,
             const std::vector<PokerPlayer>& players,
-            const std::vector<int>& winners) override
+            const std::vector<int>& winners) 
     {
         std::cout << "Community Cards: " << community_cards << std::endl;
         std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;

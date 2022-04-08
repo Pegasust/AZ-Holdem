@@ -26,17 +26,17 @@ class PokerGameModel: public ToStringCRTP<PokerGameModel> {
 public:
     class Observer {
     public:
-        // virtual void on_open_community_hand(const Card& community_card);
+        // void on_open_community_hand(const Card& community_card);
         virtual void win_determined(
             const std::vector<Card>& community_cards,
             const std::vector<PokerPlayer>& players,
-            const std::vector<int>& winners){}
+            const std::vector<int>& winners){ std::cout << "virtual" << std::endl;};
     };
 private:
     std::vector<Card> deck;
     std::vector<PokerPlayer> players;
     std::vector<Card> community_cards;
-    std::vector<Observer> observers;
+    std::vector<std::reference_wrapper<Observer> observers;
     static constexpr double ANTE_USD = 2;
     double pot;
 
