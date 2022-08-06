@@ -33,12 +33,11 @@ public CompareFromLessCRTP<PokerHand>, public ToStringCRTP<PokerHand>, private s
 
   // constructor with va-args -> initializer list of vector
   template<typename... CardConstructs>
-  PokerHand(CardConstructs&&... args) : 
-  vector({ std::forward<CardConstructs>(args)... }),
-  hand_value(),
-  best_hand()
+  explicit PokerHand(CardConstructs&&... args) : 
+  vector({ std::forward<CardConstructs>(args)... })
   {
-      if(size() == 5) {
+      static constexpr auto FULL_HAND = 5;
+      if(size() == FULL_HAND) {
           std::sort(begin(), end());  // sort as if ace is 14.
           hand_value = make_optional(HandValue::from_hand(*this));
           best_hand = make_optional<Collection>(static_cast<const Collection&>(*this));

@@ -7,6 +7,7 @@
 
 #include "PokerPlayer.hpp"
 #include "metaprogramming.hpp"
+#include "Card.hpp"
 
 
 template<typename T>
@@ -27,10 +28,17 @@ public:
     class Observer {
     public:
         // void on_open_community_hand(const Card& community_card);
+        /**
+         * @brief Called when win is determined in the PokerGameModel
+         * 
+         * @param community_cards 
+         * @param players 
+         * @param winners 
+         */
         virtual void win_determined(
             const std::vector<Card>& community_cards,
             const std::vector<PokerPlayer>& players,
-            const std::vector<int>& winners){ std::cout << "virtual" << std::endl;};
+            const std::vector<int>& winners) = 0;
     };
 private:
     std::vector<Card> deck;

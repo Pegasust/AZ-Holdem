@@ -17,10 +17,9 @@ private:
 
 public:
     template<typename... HandConstruct>
-    PokerPlayer(double balance_usd, HandConstruct&&... forward):
+    explicit PokerPlayer(double balance_usd, HandConstruct&&... forward):
         balance_usd(balance_usd),
-        hand(std::forward<HandConstruct>(forward)...),
-        evaluated_hand() // nothing.
+        hand(std::forward<HandConstruct>(forward)...)
     {}
 
     template<typename... CardConstruct>
@@ -30,8 +29,9 @@ public:
 
     void add_from_community(const std::vector<Card> & cards) {
         evaluated_hand = make_optional<PokerHand>(cards);
-        for(int i = 0; i < hand.size(); ++i) {
-            evaluated_hand.value().addCard(hand[i]);
+        #pragma unroll 4
+        for(auto & card : hand) {
+            evaluated_hand.value().addCard(card);
         }
     }
 
@@ -62,16 +62,17 @@ public:
 
     const auto& get_balance() const {return this->balance_usd;}
 
-    friend std::ostream& operator<<(std::ostream& os, const PokerPlayer& player) {
-        os << "$" << std::fixed << std::setprecision(2) << player.balance_usd;
-        os << " - ";
+    friend std::ostream& operator<<(std::ostream& ostr, const PokerPlayer& player) {
+        ostr << "$" << std::fixed << std::setprecision(2) << player.balance_usd;
+        ostr << " - ";
+        #pragma unroll 4
         for(int i = 0; i < player.hand.size(); ++i) {
-            if(i != 0) {os << " ";}
-            os << player.hand[i];
+            if(i != 0) {ostr << " ";}
+            ostr << player.hand[i];
         }
-        os << "\n";
-        os << "  Evaluated hand: " << player.evaluated_hand;
+        ostr << "\n";
+        ostr << "  Evaluated hand: " << player.evaluated_hand;
 
-        return os;
+        return ostr;
     }
 };

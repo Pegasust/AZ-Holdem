@@ -13,6 +13,6 @@
 #ifndef SCOPEDENUM_CARD_HPP
 #define SCOPEDENUM_CARD_HPP
 
-#include "Card.cpp"
+#include "Card.ipp"
 
 #endif  // SCOPEDENUM_CARD_HPP

@@ -19,7 +19,7 @@ enum class HandType : int
   HIGH = 0
 };
 
-int common_rank_from_type(HandType type) {
+inline int common_rank_from_type(HandType type) {
   switch(type) {
     case HandType::PAIR:
       return 2;
@@ -35,7 +35,7 @@ int common_rank_from_type(HandType type) {
   assert(false && "Unreachable");
 }
 
-HandType type_from_common_rank(int most_common_rank, int second_common_rank=0) {
+inline HandType type_from_common_rank(int most_common_rank, int second_common_rank=0) {
     if(most_common_rank == 4) {
         return HandType::SAME_4;
     }
@@ -48,9 +48,10 @@ HandType type_from_common_rank(int most_common_rank, int second_common_rank=0) {
     return HandType::HIGH;
 }
 
-std::ostream& operator<<(std::ostream& os, const HandType& type)
+inline std::ostream& operator<<(std::ostream& ostr, const HandType& type)
 {
-  static const char* hand_type_str[] = {
+  static constexpr auto HANDS_COUNT = 9;
+  static std::array<const char*, HANDS_COUNT> hand_type_str = {
     "High Card",
     "Pair",
     "Double pairs",
@@ -62,6 +63,6 @@ std::ostream& operator<<(std::ostream& os, const HandType& type)
     "Straight Flush",
   };
   auto idx = static_cast<int>(type);
-  return os << hand_type_str[idx];
+  return ostr << hand_type_str.at(idx);
 }
 

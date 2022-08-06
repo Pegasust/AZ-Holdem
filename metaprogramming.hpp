@@ -38,7 +38,11 @@ public:
         return self() == other || other < self();
     }
 protected:
-    ~CompareFromLessCRTP() = default;
+    ~CompareFromLessCRTP() noexcept = default;
+    CompareFromLessCRTP(CompareFromLessCRTP<cls> const& copy) noexcept = default;
+    CompareFromLessCRTP(CompareFromLessCRTP<cls>&& move) noexcept = default;
+    CompareFromLessCRTP& operator=(CompareFromLessCRTP<cls> const& copy) noexcept = default;
+    CompareFromLessCRTP& operator=(CompareFromLessCRTP<cls>&& move) noexcept = default;
 };
 
 /**
@@ -81,7 +85,7 @@ public:
     using std::unique_ptr<T>::reset;
 
     template<typename... TForward>
-    Optional(TForward&&... args): Optional<T>::unique_ptr(std::forward<TForward>(args)...){}
+    explicit Optional(TForward&&... args): Optional<T>::unique_ptr(std::forward<TForward>(args)...){}
 
     bool has_value() const{
         return static_cast<bool>(*this);
@@ -102,14 +106,14 @@ public:
     void clear() {
         reset();
     }
-    friend std::ostream& operator<<(std::ostream& os, const Optional<T>& val) {
-        os << "<";
+    friend std::ostream& operator<<(std::ostream& ostr, const Optional<T>& val) {
+        ostr << "<";
         if(val.has_value()) {
-            os << val.value();
+            ostr << val.value();
         } else {
-            os << "Optional.empty";
+            ostr << "Optional.empty";
         }
-        return os << ">";
+        return ostr << ">";
     }
 };
 
@@ -132,6 +136,7 @@ template<typename T, typename... TConstructs>
 [[nodiscard]] inline Optional<T> make_optional(TConstructs&&... args) {
     return Optional<T>{std::move(std::make_unique<T>(std::forward<TConstructs>(args)...))};
 }
+
 
 
 #endif
